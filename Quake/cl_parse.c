@@ -200,7 +200,7 @@ const char *svc_strings[128] =
 	"126", // 126
 	"127", // 127
 };
-#define	NUM_SVC_STRINGS	(sizeof(svc_strings) / sizeof(svc_strings[0]))
+#define NUM_SVC_STRINGS Q_COUNTOF(svc_strings)
 
 qboolean warn_about_nehahra_protocol; //johnfitz
 
@@ -510,7 +510,7 @@ static unsigned int CLFTE_ReadDelta(unsigned int entnum, entity_state_t *news, c
 			/*news->abslight =*/ MSG_ReadByte();
 		//else
 		//	news->abslight = 0;
-		//news->drawflags = drawflags;
+		news->drawflags = drawflags;
 	}
 	if (bits & UF_TAGINFO)
 	{
@@ -2595,7 +2595,7 @@ qboolean CL_ParseProQuakeString(const char* string) // #pqteam
 	const char* spectator = "null"; // woods #autovote
 	const char* star_observer = "null"; // woods #autovote
 
-	if ((cl.gametype == GAME_DEATHMATCH) && (cls.state == ca_connected))
+	if ((cl.gametype == GAME_DEATHMATCH) && (cls.state == ca_connected) && cl.scores && cl.realviewentity >= 1 && cl.realviewentity <= cl.maxclients)
 	{// am I colored up?
 
 		char buf[10];
@@ -4069,7 +4069,7 @@ CL_ParseServerMessage
 void CL_ParseServerMessage (void)
 {
 	int			cmd;
-	int			i;
+	int			i, j;
 	const char		*str; //johnfitz
 	int			lastcmd; //johnfitz
 	const char*		s;	// woods #pqteam
@@ -4270,50 +4270,51 @@ void CL_ParseServerMessage (void)
 		case svc_updatename:
 			Sbar_Changed ();
 			i = MSG_ReadByte ();
+			str = MSG_ReadString();
 			if (cl.maxclients <= 0) // woods - serverinfo not received yet, consume args so buffer stays aligned
 			{
-				MSG_ReadString();
 				Con_DPrintf("Skipped early svc_updatename (slot %d) before serverinfo\n", i);
 				break;
 			}
-			if (i >= cl.maxclients)
-				Host_Error ("CL_ParseServerMessage: svc_updatename (%u) > MAX_SCOREBOARD (%u)", i, cl.maxclients); // woods - temporary? fix for connection issue
-			q_strlcpy (cl.scores[i].name, MSG_ReadString(), MAX_SCOREBOARDNAME);
-			if (cl.scores[i].name[0])
-				Info_SetKey(cl.scores[i].userinfo, sizeof(cl.scores[i].userinfo), "name", cl.scores[i].name);
-			else
-				memset(cl.scores[i].userinfo, 0, sizeof(cl.scores[i].userinfo));
-			CL_UpdateIgnoredChatSlot(i, cl.scores[i].name);
+			if (i < cl.maxclients && i>=0)
+			{
+				q_strlcpy (cl.scores[i].name, str, MAX_SCOREBOARDNAME);
+				if (cl.scores[i].name[0])
+					Info_SetKey(cl.scores[i].userinfo, sizeof(cl.scores[i].userinfo), "name", cl.scores[i].name);
+				else
+					memset(cl.scores[i].userinfo, 0, sizeof(cl.scores[i].userinfo));
+				CL_UpdateIgnoredChatSlot(i, cl.scores[i].name);
+			}
 			break;
 
 		case svc_updatefrags:
 			Sbar_Changed ();
 			i = MSG_ReadByte ();
+			j = MSG_ReadShort();
 			if (cl.maxclients <= 0) // woods - serverinfo not received yet, consume args so buffer stays aligned
 			{
-				MSG_ReadShort();
 				Con_DPrintf("Skipped early svc_updatefrags (slot %d) before serverinfo\n", i);
 				break;
 			}
-			if (i >= cl.maxclients)
-				Host_Error ("CL_ParseServerMessage: svc_updatefrags > MAX_SCOREBOARD");
-			cl.scores[i].frags = MSG_ReadShort ();
+			if (i < cl.maxclients && i>=0)
+				cl.scores[i].frags = j;
 			break;
 
 		case svc_updatecolors:
 			Sbar_Changed ();
 			i = MSG_ReadByte ();
+			j = MSG_ReadByte ();
 			if (cl.maxclients <= 0) // woods - serverinfo not received yet, consume args so buffer stays aligned
 			{
-				MSG_ReadByte();
 				Con_DPrintf("Skipped early svc_updatecolors (slot %d) before serverinfo\n", i);
 				break;
 			}
-			if (i >= cl.maxclients)
-				Host_Error ("CL_ParseServerMessage: svc_updatecolors > MAX_SCOREBOARD");
-			CL_NewTranslation (i, MSG_ReadByte());
-			Info_SetKey(cl.scores[i].userinfo, sizeof(cl.scores[i].userinfo), "topcolor", va("%d", cl.scores[i].shirt.basic));
-			Info_SetKey(cl.scores[i].userinfo, sizeof(cl.scores[i].userinfo), "bottomcolor", va("%d", cl.scores[i].pants.basic));
+			if (i < cl.maxclients && i>=0)
+			{
+				CL_NewTranslation (i, j);
+				Info_SetKey(cl.scores[i].userinfo, sizeof(cl.scores[i].userinfo), "topcolor", va("%d", cl.scores[i].shirt.basic));
+				Info_SetKey(cl.scores[i].userinfo, sizeof(cl.scores[i].userinfo), "bottomcolor", va("%d", cl.scores[i].pants.basic));
+			}
 			break;
 
 		case svc_particle:

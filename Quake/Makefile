@@ -46,7 +46,7 @@ check_gcc = $(shell if echo | $(CC) $(1) -Werror -S -o /dev/null -xc - > /dev/nu
 
 HOST_OS = $(shell uname|sed -e s/_.*//|tr '[:upper:]' '[:lower:]')
 
-DEBUG   ?= 0
+DEBUG ?= 0
 
 # ---------------------------
 # build variables
@@ -63,7 +63,7 @@ GNUTLS_CFLAGS := $(shell $(PKG_CONFIG) --cflags gnutls 2>/dev/null)
 GNUTLS_LIBS := $(shell $(PKG_CONFIG) --libs gnutls 2>/dev/null)
 
 CPUFLAGS=
-LDFLAGS =
+LDFLAGS?=
 DFLAGS ?=
 CFLAGS ?= -Wall -Wno-trigraphs -MMD
 CFLAGS += $(call check_gcc,-std=gnu11,)
@@ -90,26 +90,6 @@ ifeq ($(DO_USERDIRS),1)
 CFLAGS += -DDO_USERDIRS=1
 endif
 
-### X11BASE only gets used if its in an unusual place
-
-X11DIRS := /usr/X11R7 /usr/local/X11R7 /usr/X11R6 /usr/local/X11R6
-X11BASE_GUESS := $(shell \
-	if [ -e /usr/include/X11/Xlib.h ] && \
-		[ -e /usr/lib/libX11.a ]; then exit 0; fi; \
-	if [ -e /usr/local/include/X11/Xlib.h ] && \
-		[ -e /usr/local/lib/libX11.a ]; then exit 0; fi; \
-	for DIR in $(X11DIRS); do \
-            if [ -e $$DIR/include/X11/Xlib.h ] && \
-		[ -e $$DIR/lib/libX11.a ]; then echo $$DIR; break; fi; \
-	done )
-
-X11BASE	?= $(X11BASE_GUESS)
-
-ifneq ($(X11BASE),)
-LDFLAGS+= -L$(X11BASE)/lib
-CFLAGS += -I$(X11BASE)/include
-endif
-
 ifeq ($(USE_SDL2),1)
 CFLAGS += -DUSE_SDL2
 endif
@@ -121,15 +101,16 @@ SDL_CONFIG ?= sdl2-config
 else
 SDL_CONFIG ?= sdl-config
 endif
-SDL_CFLAGS := $(shell $(SDL_CONFIG) --cflags)
-SDL_LIBS   := $(shell $(SDL_CONFIG) --libs)
+SDL_CFLAGS = $(shell $(SDL_CONFIG) --cflags)
+SDL_LIBS   = $(shell $(SDL_CONFIG) --libs)
 
+NET_LIBS   =
 ifeq ($(HOST_OS),sunos)
-NET_LIBS   :=-lsocket -lnsl -lresolv
+NET_LIBS   =-lsocket -lnsl -lresolv
 else ifeq ($(HOST_OS),haiku)
-NET_LIBS   :=-lnetwork
+NET_LIBS   =-lnetwork
 else
-NET_LIBS   :=
+NET_LIBS   =
 endif
 
 NET_LIBS   += -lcurl
@@ -162,7 +143,7 @@ cpp_vorbisdec=-DVORBIS_USE_TREMOR
 lib_vorbisdec=-lvorbisidec -logg
 endif
 
-CODECLIBS  :=
+CODECLIBS  =
 ifeq ($(USE_CODEC_WAVE),1)
 CFLAGS+= -DUSE_CODEC_WAVE
 endif
@@ -222,10 +203,20 @@ ifeq ($(GNUTLS_PKG_OK),1)
 CFLAGS+= -DUSE_GNUTLS -DGNUTLS_STATIC $(GNUTLS_CFLAGS)
 COMMON_LIBS+= $(GNUTLS_LIBS)
 else
-$(warning gnutls requested but not found via pkg-config; building without USE_GNUTLS)
+ ifeq (1,$(shell $(PKG_CONFIG) --exists gnutls && echo 1))
+  CFLAGS+= -DUSE_GNUTLS -DGNUTLS_STATIC $(shell $(PKG_CONFIG) --cflags gnutls)
+  COMMON_LIBS+= $(shell $(PKG_CONFIG) --libs gnutls)
+ else
+  $(warning gnutls requested but not found via pkg-config; building without USE_GNUTLS)
+ endif
 endif
 endif
 
+ifneq ($(HOST_OS),haiku)
+COMMON_LIBS += -lm
+endif
+
+CFLAGS := $(CFLAGS)
 LIBS := $(COMMON_LIBS) $(NET_LIBS) $(CODECLIBS)
 
 # ---------------------------
@@ -286,7 +277,7 @@ GLOBJS = \
 	r_brush.o \
 	gl_model.o
 
-OBJS := strlcat.o \
+OBJS = strlcat.o \
 	strlcpy.o \
 	$(GLOBJS) \
 	$(SYSOBJ_INPUT) \
@@ -343,7 +334,7 @@ OBJS := strlcat.o \
 
 .PHONY:	clean debug release
 
-DEFAULT_TARGET := quakespasm
+DEFAULT_TARGET = quakespasm
 all: $(DEFAULT_TARGET)
 
 %.o:	%.c

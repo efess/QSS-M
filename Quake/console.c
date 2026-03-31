@@ -2419,7 +2419,7 @@ Okay to call even when the screen can't be updated
 void Con_SafePrintf (const char *fmt, ...)
 {
 	va_list		argptr;
-	char		msg[1024];
+	char		msg[MAXPRINTMSG];
 	int		temp;
 
 	va_start (argptr, fmt);
@@ -2770,8 +2770,6 @@ void Con_AddToTabList (const char* name, const char* partial, const char* type, 
 		bash_singlematch = 0;
 		i_bash = q_strcasestr (bash_partial, partial);
 		i_name = q_strcasestr (name, partial);
-		SDL_assert (i_bash);
-		SDL_assert (i_name);
 		if (i_name && i_bash)
 		{
 			i_bash2 = i_bash;
@@ -3873,8 +3871,7 @@ static const arg_completion_type_t arg_completion_types[] =
 	{ "mapsize",				CompleteMapSize,		NULL }
 };
 
-static const int num_arg_completion_types =
-sizeof (arg_completion_types) / sizeof (arg_completion_types[0]);
+static const int num_arg_completion_types = Q_COUNTOF(arg_completion_types);
 
 /*
 ============

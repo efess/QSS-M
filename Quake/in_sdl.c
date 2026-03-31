@@ -1649,7 +1649,7 @@ static inline int IN_SDL_KeysymToQuakeKey(SDLKey sym)
 	case SDLK_BREAK: return K_PAUSE;
 	case SDLK_PAUSE: return K_PAUSE;
 
-	case SDLK_WORLD_18: return '~'; // the '²' key
+	case SDLK_WORLD_18: return '~'; // the 'ï¿½' key
 
 	default: return 0;
 	}
@@ -1977,7 +1977,7 @@ void IN_SendKeyEvents (void)
 				windowhasfocus=false;
 				BGM_Pause(); // woods #usermute - music
 				Sound_Toggle_Mute_On_f(); // woods #mute -- adapted from Fitzquake Mark V
-				
+
 #ifdef MACOS_X_ACCELERATION_HACK
 				/* NEW: Force restore on focus lost to avoid timing issues */
 				if (originalMouseSpeed != -1)
@@ -1990,7 +1990,7 @@ void IN_SendKeyEvents (void)
 					Con_DPrintf("Focus lost: acceleration was not disabled (originalMouseSpeed=-1)\n");
 				}
 #endif
-				
+
 				if ((cl.gametype == GAME_DEATHMATCH) && (cls.state == ca_connected))
 				{
 					if (cl.modtype == 1 || cl.modtype == 4) // woods if afk is NO
@@ -2027,9 +2027,15 @@ void IN_SendKeyEvents (void)
 			if (event.active.state & (SDL_APPINPUTFOCUS|SDL_APPACTIVE))
 			{
 				if (event.active.gain)
-					windowhasfocus=true, S_UnblockSound();
+				{
+					windowhasfocus = true;
+					S_UnblockSound();
+				}
 				else
-					windowhasfocus=false, S_BlockSound();
+				{
+					windowhasfocus = false;
+					S_BlockSound();
+				}
 			}
 			break;
 #endif
@@ -2076,7 +2082,7 @@ void IN_SendKeyEvents (void)
 		case SDL_MOUSEBUTTONDOWN:
 		case SDL_MOUSEBUTTONUP:
 			if (event.button.button < 1 ||
-				event.button.button > sizeof(buttonremap) / sizeof(buttonremap[0]))
+				event.button.button > Q_COUNTOF(buttonremap))
 			{
 				Con_Printf ("Ignored event for mouse button %d\n",
 					event.button.button);

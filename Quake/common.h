@@ -153,6 +153,7 @@ void InsertLinkAfter (link_t *l, link_t *after);
 
 // woods #modsmenu #demosmenu (iw)
 
+
 typedef struct vec_header_t {
 	size_t capacity;
 	size_t size;
@@ -164,12 +165,13 @@ typedef struct vec_header_t {
 #define VEC_POP(v)				do { SDL_assert(v && VEC_HEADER(v).size >= 1); VEC_HEADER(v).size--; } while (0) // woods (iw) #democontrols
 #define VEC_POP_N(v,n)			do { SDL_assert(v && VEC_HEADER(v).size >= (n)); VEC_HEADER(v).size -= (n); } while (0) // woods (iw) #democontrols
 #define VEC_SIZE(v)				((v) ? VEC_HEADER(v).size : 0)
+#define VEC_FREE(v)				Vec_Free((void**)&(v))
 #define VEC_CLEAR(v)			Vec_Clear((void**)&(v))
 
-void Vec_Grow(void** pvec, size_t element_size, size_t count);
-void Vec_Append(void** pvec, size_t element_size, const void* data, size_t count);
-void Vec_Clear(void** pvec);
-void Vec_Free(void** pvec);
+void Vec_Grow (void **pvec, size_t element_size, size_t count);
+void Vec_Append (void **pvec, size_t element_size, const void *data, size_t count);
+void Vec_Clear (void **pvec);
+void Vec_Free (void **pvec);
 
 //============================================================================
 
@@ -287,12 +289,12 @@ extern	qboolean	com_eof;
 
 typedef enum // woods (ironwail) #mapdescriptions
 {
-	CPE_NOTRUNC,					// return parse error in case of overflow
-	CPE_ALLOWTRUNC,					// truncate com_token in case of overflow
+	CPE_NOTRUNC,		// return parse error in case of overflow
+	CPE_ALLOWTRUNC		// truncate com_token in case of overflow
 } cpe_mode;
 
 const char *COM_Parse (const char *data);
-const char *COM_ParseEx (const char* data, cpe_mode mode); // woods (ironwail) #mapdescriptions
+const char *COM_ParseEx (const char *data, cpe_mode mode); // woods (ironwail) #mapdescriptions
 
 extern	int		com_argc;
 extern	char	**com_argv;

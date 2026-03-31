@@ -64,6 +64,14 @@ typedef struct
 	char	userinfo[8192];
 } scoreboard_t;
 
+//safe accessor for the local player's scoreboard entry.
+//returns NULL if not connected or scores not allocated.
+//use instead of cl.scores[cl.realviewentity - 1] which crashes at startup.
+// defined after client_state_t — see CL_LocalScoreboard below
+#define CL_LOCAL_SCOREBOARD() \
+	(cl.scores && cl.realviewentity >= 1 && cl.realviewentity <= cl.maxclients \
+	 ? &cl.scores[cl.realviewentity - 1] : NULL)
+
 // JPG - added this for teamscore status bar and proquake messages // rook / woods 8/31/2021 #pqteam
 typedef struct
 {

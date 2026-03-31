@@ -53,16 +53,16 @@ static const float	r_avertexnormal_dots[SHADEDOT_QUANT][256] = {
 #include "anorm_dots.h"
 };
 
-extern	vec3_t			lightspot;
+extern	vec3_t	lightspot;
 
 static const float	*shadedots = r_avertexnormal_dots[0];
 static vec3_t	shadevector;
 
-float	entalpha; //johnfitz
+static float	entalpha; //johnfitz
 
-qboolean	overbright; //johnfitz
+static qboolean overbright; //johnfitz
 
-qboolean shading = true; //johnfitz -- if false, disable vertex shading for various reasons (fullbright, r_lightmap, showtris, etc)
+static qboolean shading = true; //johnfitz -- if false, disable vertex shading for various reasons (fullbright, r_lightmap, showtris, etc)
 
 //johnfitz -- struct for passing lerp information to drawing functions
 typedef struct {
@@ -88,31 +88,31 @@ typedef struct
 	GLuint program;
 
 	// uniforms used in vert shader
-	GLuint bonesLoc;
-	GLuint blendLoc;
-	GLuint shadevectorLoc;
-	GLuint lightColorLoc;
+	GLint bonesLoc;
+	GLint blendLoc;
+	GLint shadevectorLoc;
+	GLint lightColorLoc;
 
 	// uniforms used in frag shader
-	GLuint texLoc;
-	GLuint lowerTexLoc;
-	GLuint upperTexLoc;
-	GLuint fullbrightTexLoc;
-	GLuint useFullbrightTexLoc;
-	GLuint useOverbrightLoc;
-	GLuint useAlphaTestLoc;
-	GLuint colorTintLoc;
-	GLuint outlineWidthLoc; // woods #routline
-	GLuint isOutlinePassLoc; // woods #routline
-	GLuint outlineColorLoc; // woods #routline
-	GLuint shellTexLoc; // woods #powershell
-	GLuint useShellTexLoc; // woods #powershell
-	GLuint clTimeLoc; // woods #powershell
-	GLuint shellColorLoc; // woods #powershell
-	GLuint shellAlphaLoc; // woods #powershell
-	GLuint shellModeLoc; // woods #powershell
-	GLuint shellTimeLoc; // woods #powershell
-	GLuint shellWaveParamsLoc; // woods #powershell
+	GLint texLoc;
+	GLint lowerTexLoc;
+	GLint upperTexLoc;
+	GLint fullbrightTexLoc;
+	GLint useFullbrightTexLoc;
+	GLint useOverbrightLoc;
+	GLint useAlphaTestLoc;
+	GLint colorTintLoc;
+	GLint outlineWidthLoc; // woods #routline
+	GLint isOutlinePassLoc; // woods #routline
+	GLint outlineColorLoc; // woods #routline
+	GLint shellTexLoc; // woods #powershell
+	GLint useShellTexLoc; // woods #powershell
+	GLint clTimeLoc; // woods #powershell
+	GLint shellColorLoc; // woods #powershell
+	GLint shellAlphaLoc; // woods #powershell
+	GLint shellModeLoc; // woods #powershell
+	GLint shellTimeLoc; // woods #powershell
+	GLint shellWaveParamsLoc; // woods #powershell
 } aliasglsl_t;
 static aliasglsl_t r_alias_glsl[ALIAS_GLSL_MODES];
 
@@ -430,7 +430,7 @@ void GLAlias_CreateShaders (void)
 		}
 		q_snprintf(processedVertSource, sizeof(processedVertSource), vertSource, defines);
 
-		glsl->program = GL_CreateProgram (processedVertSource, fragSource, sizeof(bindings)/sizeof(bindings[0]), bindings);
+		glsl->program = GL_CreateProgram (processedVertSource, fragSource, Q_COUNTOF(bindings), bindings);
 
 		if (glsl->program != 0)
 		{
@@ -2248,9 +2248,7 @@ void R_SetupAliasFrame (aliashdr_t *paliashdr, entity_t *e, lerpdata_t *lerpdata
 				lerpdata->blend = CLAMP (0.0f, (float)(cl.time - e->lerp.state.lerpstart) / (e->lerpfinish - e->lerp.state.lerpstart), 1.0f);
 			else
 				lerpdata->blend = CLAMP (0.0f, (float)(cl.time - e->lerp.state.lerpstart) / e->lerp.state.lerptime * s, 1.0f); // woods (iw) #democontrols
-			if (lerpdata->blend == 1.0f)
-				e->lerp.state.previouspose = e->lerp.state.currentpose;
-			lerpdata->pose1 = e->lerp.state.previouspose;
+			lerpdata->pose1 = (lerpdata->blend == 1.0f)?e->lerp.state.currentpose:e->lerp.state.previouspose;
 			lerpdata->pose2 = e->lerp.state.currentpose;
 		}
 		else //don't lerp
@@ -2668,12 +2666,12 @@ void R_DrawAliasModel (entity_t *e)
 		glPushMatrix ();
 	}
 
-	R_RotateForEntity (lerpdata.origin, lerpdata.angles, e->netstate.scale);
+	R_RotateForEntity (lerpdata.origin, lerpdata.angles, e);
 
 	// woods added doubleeyes (MH)
 
 	if (!strcmp(clmodel->name, "progs/eyes.mdl") /*&& gl_doubleeyes.value*/)
-	{	// gl_doubleeyes fix by mh Tue Sep 25, 2012 5:00 pm 
+	{	// gl_doubleeyes fix by mh Tue Sep 25, 2012 5:00 pm
 	// scaling factor - gl_doubleeyes 0 = unscaled, gl_doubleeyes 1 = 2x
 		float sc = 1 + 1.0f;
 
@@ -2687,13 +2685,13 @@ void R_DrawAliasModel (entity_t *e)
 		// and fix things up
 		glMultMatrixf(eyematrix);
 
-		glTranslatef(paliashdr->scale_origin[0] * fovscale, paliashdr->scale_origin[1], paliashdr->scale_origin[2]); // woods
-		glScalef(paliashdr->scale[0] * fovscale, paliashdr->scale[1], paliashdr->scale[2]);
+		glTranslatef(paliashdr->scale_origin[0], paliashdr->scale_origin[1] * fovscale, paliashdr->scale_origin[2] * fovscale);
+		glScalef(paliashdr->scale[0], paliashdr->scale[1] * fovscale, paliashdr->scale[2] * fovscale);
 	}
 	else
 	{
-		glTranslatef(paliashdr->scale_origin[0] * fovscale, paliashdr->scale_origin[1], paliashdr->scale_origin[2]); // woods
-		glScalef(paliashdr->scale[0] * fovscale, paliashdr->scale[1], paliashdr->scale[2]);
+		glTranslatef(paliashdr->scale_origin[0], paliashdr->scale_origin[1] * fovscale, paliashdr->scale_origin[2] * fovscale);
+		glScalef(paliashdr->scale[0], paliashdr->scale[1] * fovscale, paliashdr->scale[2] * fovscale);
 	}
 
 	// end double eyes / woods
@@ -2713,7 +2711,7 @@ void R_DrawAliasModel (entity_t *e)
 		glShadeModel (GL_SMOOTH);
 	if (gl_affinemodels.value)
 		glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
-	overbright = gl_overbright_models.value;
+	overbright = !!gl_overbright_models.value;
 	shading = true;
 
 	//
@@ -3148,9 +3146,9 @@ void R_DrawAliasModel_ShowTris (entity_t *e)
 		fovscale = 1.0f / tan(DEG2RAD(r_refdef.basefov / 2.0)) / cl_gun_fovscale.value;
 
 	glPushMatrix ();
-	R_RotateForEntity (lerpdata.origin,lerpdata.angles, e->netstate.scale);
-	glTranslatef (paliashdr->scale_origin[0] * fovscale, paliashdr->scale_origin[1], paliashdr->scale_origin[2]);
-	glScalef (paliashdr->scale[0] * fovscale, paliashdr->scale[1], paliashdr->scale[2]);
+	R_RotateForEntity (lerpdata.origin,lerpdata.angles, e);
+	glTranslatef (paliashdr->scale_origin[0], paliashdr->scale_origin[1] * fovscale, paliashdr->scale_origin[2] * fovscale);
+	glScalef (paliashdr->scale[0], paliashdr->scale[1] * fovscale, paliashdr->scale[2] * fovscale);
 
 	shading = false;
 	glColor3f(1,1,1);

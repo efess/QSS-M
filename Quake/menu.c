@@ -4461,7 +4461,7 @@ void M_AdjustSliders (int dir)
 	}
 }
 
-void M_DrawSlider (int x, int y, float range, float value, const char* format)
+void M_DrawSlider (int x, int y, float range, float value, const char *format)
 {
 	int	i;
 	char	buffer[6];

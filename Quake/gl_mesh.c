@@ -328,11 +328,11 @@ void GLMesh_LoadVertexBuffer (qmodel_t *m, aliashdr_t *mainhdr)
 			float hscale, vscale;
 
 			//johnfitz -- padded skins
-			hscale = (float)hdr->skinwidth/(float)TexMgr_PadConditional(hdr->skinwidth);
-			vscale = (float)hdr->skinheight/(float)TexMgr_PadConditional(hdr->skinheight);
+			hscale = 1.0f/TexMgr_PadConditional(hdr->skinwidth);
+			vscale = 1.0f/TexMgr_PadConditional(hdr->skinheight);
 			//johnfitz
 
-			hdr->vbostofs = stofs; 
+			hdr->vbostofs = stofs;
 			st = (meshst_t *) (vbodata + stofs);
 			stofs += hdr->numverts_vbo*sizeof(*st);
 			switch(hdr->poseverttype)
@@ -348,8 +348,8 @@ void GLMesh_LoadVertexBuffer (qmodel_t *m, aliashdr_t *mainhdr)
 			case PV_QUAKE1:
 				for (f = 0; f < hdr->numverts_vbo; f++)
 				{
-					st[f].st[0] = hscale * ((float) desc[f].st[0] + 0.5f) / (float) hdr->skinwidth;
-					st[f].st[1] = vscale * ((float) desc[f].st[1] + 0.5f) / (float) hdr->skinheight;
+					st[f].st[0] = hscale * ((float) desc[f].st[0] + 0.5f);
+					st[f].st[1] = vscale * ((float) desc[f].st[1] + 0.5f);
 				}
 				break;
 			case PV_IQM:
@@ -414,7 +414,7 @@ void GLMesh_LoadVertexBuffers (void)
 		if (m->type != mod_alias) continue;
 
 		hdr = (aliashdr_t *) Mod_Extradata (m);
-		
+
 		GLMesh_LoadVertexBuffer (m, hdr);
 	}
 }
@@ -430,7 +430,7 @@ void GLMesh_DeleteVertexBuffers (void)
 {
 	int j;
 	qmodel_t *m;
-	
+
 	if (!gl_vbo_able)
 		return;
 
@@ -646,7 +646,7 @@ void Mod_LoadMD3Model (qmodel_t *mod, void *buffer)
 			osurf->nextsurface = size;
 		else
 			osurf->nextsurface = 0;
-		
+
 		osurf->poseverttype = PV_QUAKE3;
 		osurf->numverts_vbo = osurf->numverts = LittleLong(pinsurface->numVerts);
 		pinvert = (md3XyzNormal_t*)((byte*)pinsurface + LittleLong(pinsurface->ofsXyzNormals));

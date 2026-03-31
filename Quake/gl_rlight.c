@@ -330,7 +330,6 @@ void R_MarkLights (dlight_t *light, vec3_t lightorg, int framecount, int num, mn
 	int			 j, s, t;
 
 start:
-
 	if (node->contents < 0)
 		return;
 

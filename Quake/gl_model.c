@@ -252,7 +252,7 @@ byte *Mod_LeafPVS (mleaf_t *leaf, qmodel_t *model)
 byte *Mod_NoVisPVS (qmodel_t *model)
 {
 	int pvsbytes;
- 
+
 	pvsbytes = (model->numleafs+7)>>3;
 	if (mod_novis == NULL || pvsbytes > mod_novis_capacity)
 	{
@@ -260,7 +260,7 @@ byte *Mod_NoVisPVS (qmodel_t *model)
 		mod_novis = (byte *) realloc (mod_novis, mod_novis_capacity);
 		if (!mod_novis)
 			Sys_Error ("Mod_NoVisPVS: realloc() failed on %d bytes", mod_novis_capacity);
-		
+
 		memset(mod_novis, 0xff, mod_novis_capacity);
 	}
 	return mod_novis;
@@ -1846,6 +1846,8 @@ static void Mod_LoadFaces (lump_t *l, qboolean bsp2)
 			out->styles[i] = INVALID_LIGHTSTYLE;
 
 		out->flags = 0;
+		if (out->numedges < 3)
+			Con_Warning("surfnum %d: bad numedges %d\n", surfnum, out->numedges);
 
 		if (side)
 			out->flags |= SURF_PLANEBACK;
@@ -1884,7 +1886,7 @@ static void Mod_LoadFaces (lump_t *l, qboolean bsp2)
 
 	// lighting info
 		if (loadmodel->bspversion == BSPVERSION_QUAKE64)
-			lofs /= 2; // Q64 samples are 16bits instead 8 in normal Quake 
+			lofs /= 2; // Q64 samples are 16bits instead 8 in normal Quake
 
 		for (facestyles = 0 ; facestyles<MAXLIGHTMAPS && out->styles[facestyles] != INVALID_LIGHTSTYLE ; facestyles++)
 			;	//count the styles so we can bound-check properly.
@@ -3326,7 +3328,7 @@ static byte *Mod_LoadVisibilityExternal(FILE* f)
 	byte*	visdata;
 
 	filelen = 0;
-	if (fread(&filelen, 1, 4, f) != 4) // woods
+	if (!fread(&filelen, 4, 1, f))
 		return NULL;
 	filelen = LittleLong(filelen);
 	if (filelen <= 0) return NULL;
@@ -3343,7 +3345,7 @@ static void Mod_LoadLeafsExternal(FILE* f)
 	void*	in;
 
 	filelen = 0;
-	if (fread(&filelen, 1, 4, f) != 4) // woods
+	if (!fread(&filelen, 4, 1, f))
 		return;
 	filelen = LittleLong(filelen);
 	if (filelen <= 0) return;

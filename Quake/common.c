@@ -187,7 +187,7 @@ void InsertLinkAfter (link_t *l, link_t *after)
 
 // woods #modsmenu #demosmenu (iw)
 
-void Vec_Grow(void** pvec, size_t element_size, size_t count)
+void Vec_Grow (void **pvec, size_t element_size, size_t count)
 {
 	vec_header_t header;
 	if (*pvec)
@@ -197,7 +197,7 @@ void Vec_Grow(void** pvec, size_t element_size, size_t count)
 
 	if (header.size + count > header.capacity)
 	{
-		void* new_buffer;
+		void *new_buffer;
 		size_t total_size;
 
 		header.capacity = header.size + count;
@@ -207,38 +207,33 @@ void Vec_Grow(void** pvec, size_t element_size, size_t count)
 		total_size = sizeof(vec_header_t) + header.capacity * element_size;
 
 		if (*pvec)
-			new_buffer = realloc(((vec_header_t*)*pvec) - 1, total_size);
+			new_buffer = realloc (((vec_header_t*)*pvec) - 1, total_size);
 		else
-			new_buffer = malloc(total_size);
+			new_buffer = malloc (total_size);
 		if (!new_buffer)
-		{
-			char errorMsg[128];
-			snprintf(errorMsg, sizeof(errorMsg), "Vec_Grow: failed to allocate %llu bytes\n", (unsigned long long)total_size);
-			Sys_Error("%s", errorMsg);
-
-		}
+			Sys_Error ("Vec_Grow: failed to allocate %lu bytes\n", (unsigned long)total_size);
 
 		*pvec = 1 + (vec_header_t*)new_buffer;
 		VEC_HEADER(*pvec) = header;
 	}
 }
 
-void Vec_Append(void** pvec, size_t element_size, const void* data, size_t count)
+void Vec_Append (void **pvec, size_t element_size, const void *data, size_t count)
 {
 	if (!count)
 		return;
-	Vec_Grow(pvec, element_size, count);
-	memcpy((byte*)*pvec + VEC_HEADER(*pvec).size, data, count * element_size);
+	Vec_Grow (pvec, element_size, count);
+	memcpy ((byte *)*pvec + VEC_HEADER(*pvec).size, data, count * element_size);
 	VEC_HEADER(*pvec).size += count;
 }
 
-void Vec_Clear(void** pvec)
+void Vec_Clear (void **pvec)
 {
 	if (*pvec)
 		VEC_HEADER(*pvec).size = 0;
 }
 
-void Vec_Free(void** pvec)
+void Vec_Free (void **pvec)
 {
 	if (*pvec)
 	{
@@ -492,44 +487,19 @@ int q_strncasecmp(const char *s1, const char *s2, size_t n)
 	return (int)(c1 - c2);
 }
 
-//spike -- grabbed this from fte, because its useful to me
 char *q_strcasestr(const char *haystack, const char *needle)
 {
-	int c1, c2, c2f;
-	int i;
-	c2f = *needle;
-	if (c2f >= 'a' && c2f <= 'z')
-		c2f -= ('a' - 'A');
-	if (!c2f)
-		return (char*)haystack;
-	while (1)
+	const size_t len = strlen(needle);
+
+	while (*haystack)
 	{
-		c1 = *haystack;
-		if (!c1)
-			return NULL;
-		if (c1 >= 'a' && c1 <= 'z')
-			c1 -= ('a' - 'A');
-		if (c1 == c2f)
-		{
-			for (i = 1; ; i++)
-			{
-				c1 = haystack[i];
-				c2 = needle[i];
-				if (c1 >= 'a' && c1 <= 'z')
-					c1 -= ('a' - 'A');
-				if (c2 >= 'a' && c2 <= 'z')
-					c2 -= ('a' - 'A');
-				if (!c2)
-					return (char*)haystack;	//end of needle means we found a complete match
-				if (!c1)	//end of haystack means we can't possibly find needle in it any more
-					return NULL;
-				if (c1 != c2)	//mismatch means no match starting at haystack[0]
-					break;
-			}
-		}
-		haystack++;
+		if (!q_strncasecmp(haystack, needle, len))
+			return (char *)haystack;
+
+		++haystack;
 	}
-	return NULL;	//didn't find it
+
+	return NULL;
 }
 
 char *q_strlwr (char *str)
@@ -1010,11 +980,12 @@ void Info_SetKey(char *info, size_t infosize, const char *key, const char *val)
 }
 const char *Info_GetKey(const char *info, const char *key, char *out, size_t outsize)
 {
-	// woods -- check that input pointers are not NULL
-	if ((uintptr_t)info == 0xFFFFFFFFFFFFE000)
+	// guard against NULL/bad pointers (can happen before cl.scores is allocated)
+	if (!info || (uintptr_t)info >= 0xFFFFFFFFFFFF0000ULL)
 	{
-		Con_DPrintf("error: NULL pointer passed to Info_GetKey function.\n");
-		return NULL;
+		if (out && outsize)
+			*out = 0;
+		return out;
 	}
 	
 	const char *r = out;
@@ -2030,8 +2001,8 @@ qboolean COM_DownloadNameOkay(const char *filename)
 		return false;
 
 	//quickly test the prefix to ensure that its in one of the allowed subdirs
-	if (strncmp(filename, "sound/", 6) && 
-		strncmp(filename, "progs/", 6) && 
+	if (strncmp(filename, "sound/", 6) &&
+		strncmp(filename, "progs/", 6) &&
 		strncmp(filename, "maps/", 5) &&
 		strncmp(filename, "locs/", 5) && // woods #locdownloads
 		strncmp(filename, "models/", 7) &&
@@ -2124,6 +2095,9 @@ qboolean COM_DownloadPackageNameOkay(const char *filename)
 	ext = COM_FileGetExtension(filename);
 	return COM_IsPackageExtension(ext);
 }
+
+
+/* COM_ParseEx is defined earlier in this file (woods #mapdescriptions) */
 
 
 /*
@@ -2289,7 +2263,7 @@ entity_state_t nullentitystate;
 static void COM_SetupNullState(void)
 {
 	//the null state has some specific default values
-//	nullentitystate.drawflags = /*SCALE_ORIGIN_ORIGIN*/96;
+	nullentitystate.drawflags = /*SCALE_ORIGIN_ORIGIN*/96;
 	nullentitystate.colormod[0] = 32;
 	nullentitystate.colormod[1] = 32;
 	nullentitystate.colormod[2] = 32;
@@ -3978,7 +3952,7 @@ static void COM_Game_f (void)
 				}
 				else if (*p == '-')
 					continue;
-				
+
 				if (!*p || !strcmp(p, ".") || strstr(p, "..") || strstr(p, "/") || strstr(p, "\\") || strstr(p, ":"))
 				{
 					Con_Printf ("gamedir should be a single directory name, not a path\n");
@@ -3987,6 +3961,15 @@ static void COM_Game_f (void)
 
 				if (!q_strcasecmp(p, GAMENAME))
 					continue; //don't add id1, its not interesting enough.
+
+				if (Sys_FileType(va("%s/%s", com_basedir, p)) != FS_ENT_DIRECTORY)
+				{
+					if (host_parms->userdir == host_parms->basedir || (Sys_FileType(va("%s/%s", host_parms->userdir, p)) != FS_ENT_DIRECTORY))
+					{
+						Con_Printf ("No such game directory \"%s\"\n", p);
+						return;
+					}
+				}
 
 				if (*paths)
 					q_strlcat(paths, ";", sizeof(paths));

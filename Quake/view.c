@@ -269,10 +269,10 @@ void V_DriftPitch (void)
 ==============================================================================
 */
 
-cshift_t	cshift_empty = { {130,80,50}, 0 };
-cshift_t	cshift_water = { {130,80,50}, 128 };
-cshift_t	cshift_slime = { {0,25,5}, 150 };
-cshift_t	cshift_lava = { {255,80,0}, 150 };
+cshift_t cshift_empty = { {130,80,50}, 0 };
+static cshift_t cshift_water = { {130,80,50}, 128 };
+static cshift_t cshift_slime = { {0,25,5}, 150 };
+static cshift_t cshift_lava = { {255,80,0}, 150 };
 
 float		v_blend[4];		// rgba 0.0 - 1.0
 
@@ -1160,7 +1160,14 @@ void V_CalcRefdef (void)
 		for (i=0 ; i<3 ; i++)
 			r_refdef.vieworg[i] += scr_ofsx.value*forward[i] + scr_ofsy.value*right[i] + scr_ofsz.value*up[i];
 
-	V_BoundOffsets ();
+	if (ent->model && ent->model->mins[2] >= -10 && ent->model->maxs[2] >= 24+32)
+	{	//hack this hack...
+		ent->origin[2] += 24;
+		V_BoundOffsets ();
+		ent->origin[2] -= 24;
+	}
+	else
+		V_BoundOffsets ();
 
 // set up gun stuff
 
@@ -1204,6 +1211,14 @@ void V_CalcRefdef (void)
 		view->lerpflags &= ~LERP_FINISH;
 
 	V_CalcGunDrift (view->origin, view->angles); // woods #gdrift
+
+	if (ent->lerpflags & LERP_FINISH)
+	{
+		view->lerpflags |= LERP_FINISH;
+		view->lerpfinish = ent->lerpfinish;
+	}
+	else
+		view->lerpflags &= ~LERP_FINISH;
 
 	view->model = cl.model_precache[cl.stats[STAT_WEAPON]];
 	view->frame = cl.stats[STAT_WEAPONFRAME];

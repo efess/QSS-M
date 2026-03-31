@@ -2297,8 +2297,8 @@ void SCR_DrawMatchScores(void)
 	int teamscores;
 	char buf[10];
 	char buf2[10];
-	const char* uiplaymode;
-	const char* siplaymode;
+	const char* uiplaymode = "";
+	const char* siplaymode = "";
 
 	if (scr_viewsize.value >= 130)
 		return;
@@ -2308,7 +2308,8 @@ void SCR_DrawMatchScores(void)
 		use_demo_calculation = true;
 			}
 
-	uiplaymode = Info_GetKey(cl.scores[cl.realviewentity - 1].userinfo, "mode", buf, sizeof(buf)); // serverinfo
+	if (cl.scores && cl.realviewentity >= 1 && cl.realviewentity <= cl.maxclients)
+		uiplaymode = Info_GetKey(cl.scores[cl.realviewentity - 1].userinfo, "mode", buf, sizeof(buf)); // serverinfo
 	siplaymode = Info_GetKey(cl.serverinfo, "playmode", buf2, sizeof(buf2)); // userinfo (qecrx)
 
 	if (scr_match_hud.value && cl.gametype == GAME_DEATHMATCH)   // woods for console var off and on
